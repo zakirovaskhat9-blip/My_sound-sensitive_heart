@@ -1,0 +1,8 @@
+{
+  "appId": "app.soundheart.player",
+  "appName": "my sound-sensitive heart",
+  "webDir": "www",
+  "backgroundColor": "#e10600",
+  "android": { "allowMixedContent": true },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}
