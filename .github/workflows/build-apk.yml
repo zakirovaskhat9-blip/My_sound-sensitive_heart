@@ -26,6 +26,8 @@ jobs:
         run: npx cap sync android
       - name: Build APK
         run: |
+          mkdir -p ~/.android
+          cp debug.keystore ~/.android/debug.keystore
           chmod +x android/gradlew
           cd android
           ./gradlew assembleDebug
