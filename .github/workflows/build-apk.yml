@@ -1,0 +1,36 @@
+name: Build APK
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install
+        run: npm install
+      - name: Add Android project
+        run: npx cap add android
+      - name: Generate app icons
+        run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#e10600' --iconBackgroundColorDark '#e10600'
+        continue-on-error: true
+      - name: Sync web files
+        run: npx cap sync android
+      - name: Build APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-sound-sensitive-heart-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
