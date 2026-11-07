@@ -100,6 +100,8 @@ nav svg{width:26px;height:26px}
 html{overflow:hidden;overscroll-behavior:none}
 #app{overflow:hidden;touch-action:pan-y}
 main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+#sr2{display:flex;gap:8px;padding:6px 6px 10px}
+#sr2 input{flex:1;min-width:0;padding:11px 14px;border-radius:12px;border:1px solid var(--surf2);background:var(--surf);color:var(--tx);font:inherit}
 </style>
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#e10600"><link rel="apple-touch-icon" href="icon-192.png">
 </head>
@@ -122,6 +124,7 @@ main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
   <input type="file" id="fi" accept="audio/*" multiple hidden>
   <main id="main">
     <div id="sr"><input id="q" type="search" placeholder="Поиск по названию или исполнителю"></div>
+    <div id="sr2" hidden><input id="sq" type="search" placeholder="Название, исполнитель или жанр"><button class="pill" id="sb">Найти</button></div>
     <div id="plbar" hidden></div>
     <div id="list"></div>
   </main>
@@ -136,6 +139,7 @@ main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
     <button data-t="lib" aria-label="Библиотека"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg></button>
     <button data-t="pl" aria-label="Плейлисты"><svg viewBox="0 0 24 24"><path d="M3 6h12v2H3zM3 11h12v2H3zM3 16h7v2H3zM17 10v6.3A2.5 2.5 0 1 0 19 18.7V12h3v-2z"/></svg></button>
     <button data-t="fav" aria-label="Избранное"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 5.8-8 11-8 11z"/></svg></button>
+    <button data-t="search" aria-label="Поиск"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
   </nav>
 </div>
 
@@ -165,7 +169,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PLAY='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-const S={tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
+const S={res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
 const au=$('#au');
 let db=null;
 
@@ -178,7 +182,7 @@ const savePl=()=>{try{localStorage.setItem('echo.pl',JSON.stringify(S.pls))}catc
 try{S.pls=JSON.parse(localStorage.getItem('echo.pl')||'[]')}catch(e){S.pls=[]}
 
 /* ---------- вспомогательное ---------- */
-const T=id=>S.tracks.find(t=>t.id===id);
+const T=id=>S.tracks.find(t=>t.id===id)||S.rmap[id];
 const grad=t=>{if(t.curl)return 'url('+t.curl+') center/cover no-repeat';let h=0;for(const c of t.name)h=(h*31+c.charCodeAt(0))%360;return `linear-gradient(135deg,hsl(${h} 75% 62%),hsl(${(h+55)%360} 70% 48%))`};
 const fmt=s=>{if(!isFinite(s))return '0:00';s=Math.floor(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 function parse(file){
@@ -191,7 +195,7 @@ function parse(file){
 $('#addb').onclick=()=>$('#fi').click();
 const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return h>10&&h<20?c:m===1?a:m>1&&m<5?b:c};
 function toast(msg){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{el.hidden=true},3500)}
-function addFiles(files){
+function addFiles(files,quiet){
   const added=[],ids=[];
   files.forEach((f,i)=>{
     const dup=S.tracks.find(x=>x.blob&&x.name===f.name&&x.blob.size===f.size);
@@ -207,7 +211,7 @@ function addFiles(files){
     let msg='Добавлено '+n+' '+plural(n,'песня','песни','песен');
     if(sk)msg+=', уже были: '+sk;
     let hints=0;try{hints=+localStorage.getItem('echo.hint')||0}catch(e){}
-    if(n===1&&files.length===1&&hints<3){msg+='. Чтобы выбрать сразу несколько, зажми песню пальцем и отметь остальные';try{localStorage.setItem('echo.hint',hints+1)}catch(e){}}
+    if(n===1&&files.length===1&&hints<3&&!quiet){msg+='. Чтобы выбрать сразу несколько, зажми песню пальцем и отметь остальные';try{localStorage.setItem('echo.hint',hints+1)}catch(e){}}
     toast(msg);
   }else if(sk)toast('Эти песни уже есть в библиотеке');
   return ids;
@@ -242,10 +246,10 @@ function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   const pl=S.open&&S.pls.find(p=>p.id===S.open);
   if(S.open&&!pl)S.open=null;
-  const tt=$('#ttl');tt.hidden=false;tt.textContent=t==='lib'?'my sound-sensitive heart':t==='fav'?'Избранное':(pl?pl.name:'Плейлисты');
-  $('#sr').hidden=t!=='lib';
+  const tt=$('#ttl');tt.hidden=false;tt.textContent=t==='lib'?'my sound-sensitive heart':t==='fav'?'Избранное':t==='search'?'Поиск':(pl?pl.name:'Плейлисты');
+  $('#sr').hidden=t!=='lib';$('#sr2').hidden=t!=='search';
   bar.hidden=t!=='pl';if(t!=='pl')setBar('','');
-  let ids=[],html='';
+  let ids=[],html='',pre='';
   if(t==='lib'){
     const q=$('#q').value.trim().toLowerCase();
     ids=S.tracks.slice().sort((a,b)=>b.added-a.added).filter(x=>!q||(x.title+' '+x.artist).toLowerCase().includes(q)).map(x=>x.id);
@@ -254,6 +258,13 @@ function render(){
   }else if(t==='fav'){
     ids=S.tracks.filter(x=>x.fav).map(x=>x.id);
     if(!ids.length)html='<div class="empty">Нажмите ♡ рядом с песней, и она появится здесь.</div>';
+  }else if(t==='search'){
+    ids=S.res.slice();
+    if(!jmKey())html="<div class='empty'>Для поиска нужен бесплатный ключ Jamendo.<br>Открой настройки ⚙ и вставь его.<br><br><button class='pill' id='gk'>Открыть настройки</button></div>";
+    else if(S.rbusy)html="<div class='empty'>Ищу…</div>";
+    else if(!S.rq)html="<div class='empty'>Введи название песни, исполнителя или жанр.</div>";
+    else if(!ids.length)html="<div class='empty'>"+esc(S.rnote||'Ничего не нашлось.')+"</div>";
+    else if(S.rnote)pre="<p class='nt' style='padding:0 8px'>"+esc(S.rnote)+"</p>";
   }else if(!pl){
     setBar('root','<input id="nn" placeholder="Название нового плейлиста"><button class="pill" id="mk">Создать</button>');
     html=S.pls.length?S.pls.map(p=>`<div class="row" data-p="${p.id}"><div class="cv" style="--g:${grad({name:p.name})}">${esc(p.name[0].toUpperCase())}</div><div class="tx"><b>${esc(p.name)}</b><span>Песен: ${p.ids.filter(T).length}</span></div></div>`).join(''):'<div class="empty">Создайте первый плейлист и добавляйте в него песни через меню ⋯</div>';
@@ -263,7 +274,7 @@ function render(){
     if(!ids.length)html='<div class="empty">В плейлисте пока нет песен. Откройте меню ⋯ у песни в библиотеке.</div>';
   }
   S.view=ids;
-  list.innerHTML=ids.map((id,i)=>row(T(id),i)).join('')+html;
+  list.innerHTML=pre+ids.map((id,i)=>(t==='search'?rrow:row)(T(id),i)).join('')+html;
 }
 $('#q').oninput=render;
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.t)};
@@ -278,12 +289,12 @@ $('#plbar').onkeydown=e=>{if(e.key==='Enter'&&e.target.id==='nn')mkPl()};
 function mkPl(){const i=$('#nn');if(!i)return;const v=i.value.trim();if(!v)return;S.pls.push({id:'p'+Date.now(),name:v,ids:[]});savePl();i.value='';render()}
 $('#list').onclick=e=>{
   const b=e.target.closest('button');
-  if(b){const id=b.dataset.id;if(b.dataset.a==='fav')fav(id);if(b.dataset.a==='more')more(id);return}
+  if(b){if(b.id==='gk'){settings();return}const id=b.dataset.id;if(b.dataset.a==='sv')saveRemote(T(id));if(b.dataset.a==='sim')similar(T(id));if(b.dataset.a==='fav')fav(id);if(b.dataset.a==='more')more(id);return}
   const r=e.target.closest('.row');if(!r)return;
   if(r.dataset.p){S.open=r.dataset.p;render();return}
   play(S.view[+r.dataset.i],S.view);
 };
-function fav(id){const t=T(id);if(!t)return;t.fav=!t.fav;dbPut(t);render();ui()}
+function fav(id){const t=T(id);if(!t)return;if(t.tmp){saveRemote(t);return}t.fav=!t.fav;dbPut(t);render();ui()}
 
 /* ---------- меню ---------- */
 function sheet(h){const m=$('#modal');m.innerHTML=`<div class="bk"></div><div class="sh"><div class="gb"></div>${h}</div>`;if(m.hidden){m.hidden=false;pushLayer('modal')}m.querySelector('.bk').onclick=closeModal;return m}
@@ -355,7 +366,7 @@ $('#bpv').onclick=prev;
 $('#bsh').onclick=()=>{S.sh=!S.sh;ui()};
 $('#brp').onclick=()=>{S.rp=(S.rp+1)%3;ui()};
 $('#ffav').onclick=()=>S.cur&&fav(S.cur);
-$('#fadd').onclick=()=>S.cur&&addTo(S.cur);
+$('#fadd').onclick=()=>{const t=T(S.cur);if(!t)return;if(t.tmp)return toast('Сначала сохраните песню в библиотеку кнопкой ⤓ в поиске');addTo(S.cur)};
 $('#mtx').onclick=()=>fullShow(true);
 $('#fclose').onclick=()=>fullShow(false);
 
@@ -385,7 +396,8 @@ function mediaSession(t){
 
 /* ---------- настройки и фон ---------- */
 const G=['linear-gradient(160deg,#ff7aa2,#6a4cff)','linear-gradient(160deg,#0f2027,#2c5364)','linear-gradient(160deg,#f9d976,#f39f86)','linear-gradient(160deg,#1a1626,#4b2e83)'];
-const SET={vol:1,blur:6,dim:45,bg:'none',feed:'',dyn:false};
+const JM_DEFAULT='';
+const SET={jm:'',vol:1,blur:6,dim:45,bg:'none',feed:'',dyn:false};
 let lastBg=null;
 try{Object.assign(SET,JSON.parse(localStorage.getItem('echo.set')||'{}'))}catch(e){}
 let bgUrl=null;try{bgUrl=localStorage.getItem('echo.bgimg')}catch(e){}
@@ -410,7 +422,7 @@ const fullShow=v=>{
   else closeLayer('full');
 };
 function setBar(m,h){const b=$('#plbar');if(b.dataset.m!==m){b.dataset.m=m;b.innerHTML=h}}
-const TABS=['lib','pl','fav'];
+const TABS=['lib','pl','fav','search'];
 function go(t,dir){
   if(dir===undefined)dir=Math.sign(TABS.indexOf(t)-TABS.indexOf(S.tab));
   S.tab=t;S.open=null;render();
@@ -506,8 +518,9 @@ $('#bgf').onchange=async e=>{
   applySet();saveSet();settings();
 };
 function settings(){
-  const m=sheet(`<h2>Настройки</h2><label class='sl'>Громкость<input type='range' id='s1' min='0' max='100' value='${SET.vol*100}'></label><label class='sl'>Размытие фона<input type='range' id='s2' min='0' max='30' value='${SET.blur}'></label><label class='sl'>Затемнение фона<input type='range' id='s3' min='0' max='90' value='${SET.dim}'></label><label class='sl tg'><span>Фон по обложке песни</span><input type='checkbox' id='s4' ${SET.dyn?'checked':''}></label><h2>Фон</h2><div class='gr'>${G.map((g,i)=>`<button class='sw ${SET.bg==='g'+i?'on':''}' data-bg='g${i}' style='background:${g}' aria-label='Фон ${i+1}'></button>`).join('')}<button class='sw ${SET.bg==='none'?'on':''}' data-bg='none' aria-label='Без фона'>∅</button></div><button class='opt' id='bgp'>Выбрать своё фото</button><button class='opt' id='cat'>Каталог дистрибьютора</button><p class='nt'>На iPhone громкость меняется кнопками телефона.</p>`);
+  const m=sheet(`<h2>Настройки</h2><label class='sl'>Громкость<input type='range' id='s1' min='0' max='100' value='${SET.vol*100}'></label><label class='sl'>Размытие фона<input type='range' id='s2' min='0' max='30' value='${SET.blur}'></label><label class='sl'>Затемнение фона<input type='range' id='s3' min='0' max='90' value='${SET.dim}'></label><label class='sl tg'><span>Фон по обложке песни</span><input type='checkbox' id='s4' ${SET.dyn?'checked':''}></label><h2>Фон</h2><div class='gr'>${G.map((g,i)=>`<button class='sw ${SET.bg==='g'+i?'on':''}' data-bg='g${i}' style='background:${g}' aria-label='Фон ${i+1}'></button>`).join('')}<button class='sw ${SET.bg==='none'?'on':''}' data-bg='none' aria-label='Без фона'>∅</button></div><button class='opt' id='bgp'>Выбрать своё фото</button><label class='sl'>Ключ Jamendo для поиска (client_id)<input type='text' id='s5' value='${esc(SET.jm||'')}' placeholder='вставь ключ сюда' autocomplete='off' autocapitalize='off' spellcheck='false'></label><button class='opt' id='cat'>Каталог дистрибьютора</button><p class='nt'>На iPhone громкость меняется кнопками телефона.</p>`);
   m.oninput=e=>{
+    if(e.target.id==='s5'){SET.jm=e.target.value.trim();saveSet();render();return}
     const v=+e.target.value;
     if(e.target.id==='s1'){SET.vol=v/100;$('#vol').value=v}
     if(e.target.id==='s2')SET.blur=v;
@@ -661,6 +674,82 @@ $('#cvf').onchange=e=>{
   t.cover=f;t.curl=URL.createObjectURL(f);t.cc=2;
   dbPut(t);render();ui();if(SET.dyn)applySet();toast('Обложка установлена');
 };
+
+/* ---------- поиск: каталог Jamendo (музыка под лицензиями Creative Commons) ---------- */
+const jmKey=()=>String(SET.jm||JM_DEFAULT||'').trim();
+const bad=u=>[...u].some(c=>' ()\'"<>'.includes(c));
+const goodUrl=u=>typeof u==='string'&&isUrl(u)&&!bad(u);
+const licName=u=>{const m=String(u||'').split('/licenses/')[1];return m?'CC '+m.split('/')[0].toUpperCase():'CC'};
+async function jm(path,p){
+  const u=new URL('https://api.jamendo.com/v3.0/'+path+'/');
+  const q=Object.assign({client_id:jmKey(),format:'json',limit:30,include:'musicinfo',imagesize:200,audioformat:'mp32'},p);
+  Object.keys(q).forEach(k=>u.searchParams.set(k,q[k]));
+  const r=await fetch(u.toString());const j=await r.json();
+  if(j.headers&&j.headers.status&&j.headers.status!=='success')throw new Error(j.headers.error_message||'api');
+  return j.results||[];
+}
+function addRes(list){
+  S.res=list.filter(r=>goodUrl(r.audio)).map(r=>{
+    const id='j'+r.id,tg=(r.musicinfo&&r.musicinfo.tags)||{};
+    const img=r.album_image||r.image||'';
+    S.rmap[id]={id,tmp:true,remote:true,url:r.audio,dl:goodUrl(r.audiodownload)?r.audiodownload:'',dlok:r.audiodownload_allowed!==false,name:String(r.name),title:String(r.name),artist:String(r.artist_name||''),curl:goodUrl(img)?img:'',lic:licName(r.license_ccurl),share:goodUrl(r.shareurl)?r.shareurl:'',tags:[].concat(tg.genres||[],tg.vartags||[]).slice(0,4),fav:false,added:Date.now()};
+    return id;
+  });
+}
+function rrow(t,i){
+  return `<div class="row ${S.cur===t.id?'cur':''}" data-i="${i}"><div class="cv" style="--g:${grad(t)}">${t.curl?'':'♪'}</div><div class="tx"><b>${esc(t.title)}</b><span>${esc(t.artist)}${t.lic?' · '+esc(t.lic):''}</span></div><button class="ib" data-a="sim" data-id="${t.id}" aria-label="Похожие">≈</button><button class="ib" data-a="sv" data-id="${t.id}" aria-label="Сохранить в библиотеку">⤓</button></div>`;
+}
+async function doSearch(q){
+  q=String(q||'').trim();if(!q||!jmKey())return;
+  S.rq=q;S.rbusy=true;S.rnote='';S.res=[];render();
+  try{
+    let list=await jm('tracks',{search:q}),note='';
+    const w=q.split(' ').filter(Boolean);
+    if(!list.length&&w.length>1)list=await jm('tracks',{search:w[0]});
+    if(!list.length){list=await jm('tracks',{fuzzytags:w.join(' '),order:'popularity_total'})}
+    if(!list.length)S.rnote='Ничего не нашлось. Попробуй другое название или жанр.';
+    else if(!(list[0].name||'').toLowerCase().includes(q.toLowerCase()))note='Точной песни нет, вот похожие';
+    S.rnote=S.rnote||note;
+    addRes(list);
+  }catch(e){S.rnote='Не удалось выполнить поиск. Проверь интернет и ключ Jamendo в настройках.';S.res=[]}
+  S.rbusy=false;render();
+}
+async function similar(t){
+  if(!t)return;
+  S.rq='sim';S.rbusy=true;S.rnote='';render();
+  try{
+    const list=await jm('tracks',t.tags&&t.tags.length?{fuzzytags:t.tags.join(' '),order:'popularity_total'}:{search:t.artist||t.title});
+    addRes(list.filter(x=>'j'+x.id!==t.id));
+    S.rnote='Похожие на «'+t.title+'»';
+    if(!S.res.length)S.rnote='Похожих песен не нашлось.';
+  }catch(e){S.rnote='Не удалось найти похожие. Проверь интернет и ключ Jamendo.';S.res=[]}
+  S.rbusy=false;render();
+}
+async function getBlob(url){
+  const C=window.Capacitor;
+  if(C&&C.isNativePlatform&&C.isNativePlatform()&&C.nativePromise){
+    const r=await C.nativePromise('CapacitorHttp','request',{url,method:'GET',responseType:'blob',headers:{}});
+    const bin=atob(r.data),u=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    return new Blob([u],{type:'audio/mpeg'});
+  }
+  const r=await fetch(url);if(!r.ok)throw new Error('http');return await r.blob();
+}
+async function saveRemote(t){
+  if(!t)return;
+  if(!t.dlok||!(t.dl||t.url)){toast('Автор не разрешил скачивание этой песни');return}
+  toast('Скачиваю…');
+  try{
+    const blob=await getBlob(t.dl||t.url);
+    const nm=[...((t.artist?t.artist+' - ':'')+t.title+'.mp3')].map(c=>'/:*?"<>|'.includes(c)?'_':c).join('');
+    addFiles([new File([blob],nm,{type:'audio/mpeg'})],true);
+  }catch(e){
+    toast('Не удалось скачать. Открываю страницу песни');
+    if(t.share)window.open(t.share,'_blank');
+  }
+}
+$('#sb').onclick=()=>doSearch($('#sq').value);
+$('#sq').onkeydown=e=>{if(e.key==='Enter')doSearch(e.target.value)};
 
 /* ---------- запуск ---------- */
 (async()=>{
