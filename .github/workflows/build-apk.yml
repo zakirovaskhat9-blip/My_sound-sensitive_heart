@@ -19,8 +19,12 @@ jobs:
         run: npm install
       - name: Add Android project
         run: npx cap add android
+      - name: Add open and share audio support
+        run: |
+          cp native/MainActivity.java native/IntakePlugin.java android/app/src/main/java/app/soundheart/player/
+          python3 native/patch_manifest.py
       - name: Generate app icons
-        run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#e10600' --iconBackgroundColorDark '#e10600'
+        run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#e10600' --iconBackgroundColorDark '#e10600' --splashBackgroundColor '#e10600' --splashBackgroundColorDark '#e10600'
         continue-on-error: true
       - name: Sync web files
         run: npx cap sync android
