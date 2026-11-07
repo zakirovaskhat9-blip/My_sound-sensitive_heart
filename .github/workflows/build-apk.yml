@@ -3,47 +3,41 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      - name: Check project files
+        run: |
+          missing=0
+          for f in package.json capacitor.config.json www/index.html native/MainActivity.java native/IntakePlugin.java native/patch_manifest.py debug.keystore assets/icon-only.png assets/splash.png; do
+            if [ ! -f "$f" ]; then
+              echo "::error::НЕТ ФАЙЛА В РЕПОЗИТОРИИ: $f (загрузи его, смотри README.txt)"
+              missing=1
+            fi
+          done
+          exit $missing
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
-      - name: Install dependencies
+      - name: Install
         run: npm install
-
-      - name: Build Web App
-        run: npm run build
-
-      - name: Add Android platform (if not exists)
-        run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
-
+      - name: Add Android project
+        run: npx cap add android
       - name: Add open and share audio support
         run: |
-          mkdir -p android/app/src/main/java/app/soundheart/player/
           cp native/MainActivity.java native/IntakePlugin.java android/app/src/main/java/app/soundheart/player/
           python3 native/patch_manifest.py
-
       - name: Generate app icons
         run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#e10600' --iconBackgroundColorDark '#e10600' --splashBackgroundColor '#e10600' --splashBackgroundColorDark '#e10600'
         continue-on-error: true
-
-      - name: Sync web files to Android project
+      - name: Sync web files
         run: npx cap sync android
-
       - name: Build APK
         run: |
           mkdir -p ~/.android
@@ -51,7 +45,6 @@ jobs:
           chmod +x android/gradlew
           cd android
           ./gradlew assembleDebug
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
