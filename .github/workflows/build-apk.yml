@@ -3,31 +3,47 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - name: Install
+
+      - name: Install dependencies
         run: npm install
-      - name: Add Android project
-        run: npx cap add android
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Add Android platform (if not exists)
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+
       - name: Add open and share audio support
         run: |
+          mkdir -p android/app/src/main/java/app/soundheart/player/
           cp native/MainActivity.java native/IntakePlugin.java android/app/src/main/java/app/soundheart/player/
           python3 native/patch_manifest.py
+
       - name: Generate app icons
         run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#e10600' --iconBackgroundColorDark '#e10600' --splashBackgroundColor '#e10600' --splashBackgroundColorDark '#e10600'
         continue-on-error: true
-      - name: Sync web files
+
+      - name: Sync web files to Android project
         run: npx cap sync android
+
       - name: Build APK
         run: |
           mkdir -p ~/.android
@@ -35,6 +51,7 @@ jobs:
           chmod +x android/gradlew
           cd android
           ./gradlew assembleDebug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
