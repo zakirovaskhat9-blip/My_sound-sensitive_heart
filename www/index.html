@@ -102,14 +102,63 @@ html{overflow:hidden;overscroll-behavior:none}
 main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
 #sr2{display:flex;gap:8px;padding:6px 6px 10px}
 #sr2 input{flex:1;min-width:0;padding:11px 14px;border-radius:12px;border:1px solid var(--surf2);background:var(--surf);color:var(--tx);font:inherit}
+#sr3{display:flex;gap:8px;padding:6px 6px 10px}
+#sr3 input{flex:1;min-width:0;padding:11px 14px;border-radius:12px;border:1px solid var(--surf2);background:var(--surf);color:var(--tx);font:inherit}
+.sh{max-height:88vh}
+.grp{background:var(--bg);border-radius:18px;padding:14px 14px 10px;margin-bottom:12px}
+.gt{font:600 11px/1 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+.rg{display:grid;grid-template-columns:1fr auto;align-items:center;margin-bottom:8px}
+.rg span{font-weight:600}
+.rg .val{color:var(--mut);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.rg input{grid-column:1/-1;-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:linear-gradient(to right,var(--ac) var(--p,50%),var(--surf2) var(--p,50%));margin:12px 0 6px;outline:none}
+.rg input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ac);border:3px solid var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.4)}
+.rg input::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--ac);border:3px solid var(--bg)}
+.sg{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+.sg .sw{width:100%;height:auto;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;border:2px solid transparent;background-size:cover;background-position:center;color:var(--mut)}
+.sg .sw.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--bg) inset}
+.sg .sw svg{width:20px;height:20px}
+.tgl{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 6px}
+.tgl span{font-weight:600}
+.tgl small{display:block;color:var(--mut);font-weight:400;font-size:12px;margin-top:2px}
+.switch{-webkit-appearance:none;appearance:none;flex:none;width:48px;height:28px;border-radius:14px;background:var(--surf2);position:relative;transition:background .2s;cursor:pointer;margin:0}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.switch:checked{background:var(--ac)}
+.switch:checked::after{transform:translateX(20px)}
+.fld{display:block;margin-bottom:6px}
+.fld span{display:block;font-weight:600;margin-bottom:8px}
+.fld input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--surf2);background:var(--surf);color:var(--tx);font:inherit}
+.fld+.nt{margin:0 0 8px}
+.lk{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:12px 0 6px;font-weight:600;border-top:1px solid var(--surf2);margin-top:8px}
+.lk i{font-style:normal;color:var(--mut);font-size:22px}
+@media (prefers-reduced-motion:reduce){.switch,.switch::after{transition:none}}
+.kr{display:flex;gap:8px;align-items:stretch}
+.kr input{flex:1;min-width:0}
+.kr a{display:inline-flex;align-items:center;white-space:nowrap;text-decoration:none}
+.hl{font-weight:600;margin:4px 0 8px}
+.hue{-webkit-appearance:none;appearance:none;width:100%;height:14px;border-radius:7px;background:linear-gradient(to right,hsl(0 90% 60%),hsl(60 90% 60%),hsl(120 90% 60%),hsl(180 90% 60%),hsl(240 90% 60%),hsl(300 90% 60%),hsl(360 90% 60%));margin:4px 0 8px;outline:none}
+.hue::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ac);box-shadow:0 1px 6px rgba(0,0,0,.4)}
+.hue::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--ac)}
 </style>
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#e10600"><link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <div id="bgl"></div><div id="bgd"></div>
 <script>
+window.applyTheme=function(h){
+  var r=document.documentElement.style,names=['--bg','--surf','--surf2','--tx','--mut','--ac','--acx'];
+  if(h==null||h===''){names.forEach(function(n){r.removeProperty(n)});return}
+  var dark=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches;
+  function lum(H,S,L){S/=100;L/=100;var a=S*Math.min(L,1-L);var f=function(n){var k=(n+H/30)%12;return L-a*Math.max(-1,Math.min(k-3,9-k,1))};var c=[f(0),f(8),f(4)].map(function(x){return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)});return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]}
+  var acS=dark?90:78,acL=dark?64:46;
+  var v=dark?{'--bg':'hsl('+h+' 32% 8%)','--surf':'hsl('+h+' 28% 13%)','--surf2':'hsl('+h+' 26% 20%)','--tx':'hsl('+h+' 40% 96%)','--mut':'hsl('+h+' 14% 68%)'}
+            :{'--bg':'hsl('+h+' 45% 96%)','--surf':'#ffffff','--surf2':'hsl('+h+' 38% 91%)','--tx':'hsl('+h+' 40% 12%)','--mut':'hsl('+h+' 14% 40%)'};
+  v['--ac']='hsl('+h+' '+acS+'% '+acL+'%)';
+  v['--acx']=lum(+h,acS,acL)>0.4?'#17101a':'#ffffff';
+  for(var k in v)r.setProperty(k,v[k]);
+};
 (function(){try{
   var s=JSON.parse(localStorage.getItem('echo.set')||'{}');
+  window.applyTheme(s.th==null?null:s.th);
   var G=['linear-gradient(160deg,#ff7aa2,#6a4cff)','linear-gradient(160deg,#0f2027,#2c5364)','linear-gradient(160deg,#f9d976,#f39f86)','linear-gradient(160deg,#1a1626,#4b2e83)'];
   var l=document.getElementById('bgl'),d=document.getElementById('bgd'),img=localStorage.getItem('echo.bgimg'),bg=s.bg||'none';
   l.style.backgroundImage=bg==='img'&&img?'url('+img+')':(bg.charAt(0)==='g'?G[+bg.charAt(1)]:'none');
@@ -125,6 +174,7 @@ main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
   <main id="main">
     <div id="sr"><input id="q" type="search" placeholder="Поиск по названию или исполнителю"></div>
     <div id="sr2" hidden><input id="sq" type="search" placeholder="Название, исполнитель или жанр"><button class="pill" id="sb">Найти</button></div>
+    <div id="sr3" hidden><input id="aq" type="search" placeholder="Поиск по всей музыке"><button class="pill" id="ar">Обновить</button></div>
     <div id="plbar" hidden></div>
     <div id="list"></div>
   </main>
@@ -137,6 +187,7 @@ main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
   </div>
   <nav id="tabs">
     <button data-t="lib" aria-label="Библиотека"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg></button>
+    <button data-t="all" aria-label="Вся музыка"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></button>
     <button data-t="pl" aria-label="Плейлисты"><svg viewBox="0 0 24 24"><path d="M3 6h12v2H3zM3 11h12v2H3zM3 16h7v2H3zM17 10v6.3A2.5 2.5 0 1 0 19 18.7V12h3v-2z"/></svg></button>
     <button data-t="fav" aria-label="Избранное"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 5.8-8 11-8 11z"/></svg></button>
     <button data-t="search" aria-label="Поиск"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
@@ -169,7 +220,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PLAY='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-const S={res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
+const S={all:[],allLoaded:false,allBusy:false,allErr:'',allLim:300,thumbs:{},res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
 const au=$('#au');
 let db=null;
 
@@ -246,8 +297,8 @@ function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   const pl=S.open&&S.pls.find(p=>p.id===S.open);
   if(S.open&&!pl)S.open=null;
-  const tt=$('#ttl');tt.hidden=false;tt.textContent=t==='lib'?'my sound-sensitive heart':t==='fav'?'Избранное':t==='search'?'Поиск':(pl?pl.name:'Плейлисты');
-  $('#sr').hidden=t!=='lib';$('#sr2').hidden=t!=='search';
+  const tt=$('#ttl');tt.hidden=false;tt.textContent=t==='lib'?'my sound-sensitive heart':t==='fav'?'Избранное':t==='search'?'Поиск':t==='all'?'Вся музыка':(pl?pl.name:'Плейлисты');
+  $('#sr').hidden=t!=='lib';$('#sr2').hidden=t!=='search';$('#sr3').hidden=t!=='all';
   bar.hidden=t!=='pl';if(t!=='pl')setBar('','');
   let ids=[],html='',pre='';
   if(t==='lib'){
@@ -258,9 +309,11 @@ function render(){
   }else if(t==='fav'){
     ids=S.tracks.filter(x=>x.fav).map(x=>x.id);
     if(!ids.length)html='<div class="empty">Нажмите ♡ рядом с песней, и она появится здесь.</div>';
+  }else if(t==='all'){
+    html=allHtml();
   }else if(t==='search'){
     ids=S.res.slice();
-    if(!jmKey())html="<div class='empty'>Для поиска нужен бесплатный ключ Jamendo.<br>Открой настройки ⚙ и вставь его.<br><br><button class='pill' id='gk'>Открыть настройки</button></div>";
+    if(!jmKey())html="<div class='empty'>Для поиска нужен бесплатный ключ Jamendo.<br>Открой настройки ⚙ и вставь его.<br><br><button class='pill' id='gk'>Открыть настройки</button><br><br><a class='pill' href='https://developer.jamendo.com/v3.0' target='_blank' rel='noopener' style='display:inline-block;text-decoration:none'>Получить ключ ↗</a></div>";
     else if(S.rbusy)html="<div class='empty'>Ищу…</div>";
     else if(!S.rq)html="<div class='empty'>Введи название песни, исполнителя или жанр.</div>";
     else if(!ids.length)html="<div class='empty'>"+esc(S.rnote||'Ничего не нашлось.')+"</div>";
@@ -275,6 +328,7 @@ function render(){
   }
   S.view=ids;
   list.innerHTML=pre+ids.map((id,i)=>(t==='search'?rrow:row)(T(id),i)).join('')+html;
+  if(t==='all')observeThumbs();
 }
 $('#q').oninput=render;
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.t)};
@@ -289,7 +343,7 @@ $('#plbar').onkeydown=e=>{if(e.key==='Enter'&&e.target.id==='nn')mkPl()};
 function mkPl(){const i=$('#nn');if(!i)return;const v=i.value.trim();if(!v)return;S.pls.push({id:'p'+Date.now(),name:v,ids:[]});savePl();i.value='';render()}
 $('#list').onclick=e=>{
   const b=e.target.closest('button');
-  if(b){if(b.id==='gk'){settings();return}const id=b.dataset.id;if(b.dataset.a==='sv')saveRemote(T(id));if(b.dataset.a==='sim')similar(T(id));if(b.dataset.a==='fav')fav(id);if(b.dataset.a==='more')more(id);return}
+  if(b){if(b.id==='gk'){settings();return}if(b.id==='mo'){S.allLim+=300;render();return}if(b.id==='rt'){loadAll();return}if(b.dataset.a==='ad'){addDevice(b.dataset.id);return}const id=b.dataset.id;if(b.dataset.a==='sv')saveRemote(T(id));if(b.dataset.a==='sim')similar(T(id));if(b.dataset.a==='fav')fav(id);if(b.dataset.a==='more')more(id);return}
   const r=e.target.closest('.row');if(!r)return;
   if(r.dataset.p){S.open=r.dataset.p;render();return}
   play(S.view[+r.dataset.i],S.view);
@@ -397,10 +451,11 @@ function mediaSession(t){
 /* ---------- настройки и фон ---------- */
 const G=['linear-gradient(160deg,#ff7aa2,#6a4cff)','linear-gradient(160deg,#0f2027,#2c5364)','linear-gradient(160deg,#f9d976,#f39f86)','linear-gradient(160deg,#1a1626,#4b2e83)'];
 const JM_DEFAULT='';
-const SET={jm:'',vol:1,blur:6,dim:45,bg:'none',feed:'',dyn:false};
+const SET={th:null,jm:'',vol:1,blur:6,dim:45,bg:'none',feed:'',dyn:false};
 let lastBg=null;
 try{Object.assign(SET,JSON.parse(localStorage.getItem('echo.set')||'{}'))}catch(e){}
 let bgUrl=null;try{bgUrl=localStorage.getItem('echo.bgimg')}catch(e){}
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>applyTheme(SET.th))}catch(e){}
 function toDataUrl(blob,max){max=max||1280;return new Promise(res=>{const im=new Image(),u=URL.createObjectURL(blob);im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.82))};im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u})}
 const saveSet=()=>{try{localStorage.setItem('echo.set',JSON.stringify(SET))}catch(e){}};
 const layers=[];
@@ -422,11 +477,12 @@ const fullShow=v=>{
   else closeLayer('full');
 };
 function setBar(m,h){const b=$('#plbar');if(b.dataset.m!==m){b.dataset.m=m;b.innerHTML=h}}
-const TABS=['lib','pl','fav','search'];
+const TABS=['lib','all','pl','fav','search'];
 function go(t,dir){
   if(dir===undefined)dir=Math.sign(TABS.indexOf(t)-TABS.indexOf(S.tab));
   S.tab=t;S.open=null;render();
   const m=$('#main');m.scrollTop=0;
+  if(t==='all'&&!S.allLoaded&&!S.allBusy&&!S.allErr)loadAll();
   if(dir)slideAnim(dir);
 }
 function slideAnim(dir){const m=$('#main');m.classList.remove('s1','s2');void m.offsetWidth;m.classList.add(dir>0?'s1':'s2')}
@@ -518,21 +574,55 @@ $('#bgf').onchange=async e=>{
   applySet();saveSet();settings();
 };
 function settings(){
-  const m=sheet(`<h2>Настройки</h2><label class='sl'>Громкость<input type='range' id='s1' min='0' max='100' value='${SET.vol*100}'></label><label class='sl'>Размытие фона<input type='range' id='s2' min='0' max='30' value='${SET.blur}'></label><label class='sl'>Затемнение фона<input type='range' id='s3' min='0' max='90' value='${SET.dim}'></label><label class='sl tg'><span>Фон по обложке песни</span><input type='checkbox' id='s4' ${SET.dyn?'checked':''}></label><h2>Фон</h2><div class='gr'>${G.map((g,i)=>`<button class='sw ${SET.bg==='g'+i?'on':''}' data-bg='g${i}' style='background:${g}' aria-label='Фон ${i+1}'></button>`).join('')}<button class='sw ${SET.bg==='none'?'on':''}' data-bg='none' aria-label='Без фона'>∅</button></div><button class='opt' id='bgp'>Выбрать своё фото</button><label class='sl'>Ключ Jamendo для поиска (client_id)<input type='text' id='s5' value='${esc(SET.jm||'')}' placeholder='вставь ключ сюда' autocomplete='off' autocapitalize='off' spellcheck='false'></label><button class='opt' id='cat'>Каталог дистрибьютора</button><p class='nt'>На iPhone громкость меняется кнопками телефона.</p>`);
+  const pct=(v,max)=>(v/max*100)+'%';
+  const swatches=G.map((g,i)=>`<button class='sw ${SET.bg==='g'+i?'on':''}' data-bg='g${i}' style='background:${g}' aria-label='Фон ${i+1}'></button>`).join('');
+  const photo=SET.bg==='img'&&bgUrl;
+  const m=sheet(`<h2>Настройки</h2>
+<div class='grp'><div class='gt'>Цвет темы</div>
+<div class='sg tp'><button class='sw ${SET.th==null?'on':''}' data-th='' style='background:linear-gradient(135deg,#ff7aa2,#6a4cff)' aria-label='Исходная тема'></button>${[350,25,140,200,270].map(h=>`<button class='sw ${SET.th===h?'on':''}' data-th='${h}' style='background:hsl(${h} 90% 62%)' aria-label='Цвет темы ${h}'></button>`).join('')}</div>
+<div class='hl'>Любой цвет из палитры</div>
+<input type='range' class='hue' id='s6' min='0' max='360' value='${SET.th==null?340:SET.th}' aria-label='Оттенок темы'></div>
+<div class='grp'><div class='gt'>Звук</div>
+<label class='rg'><span>Громкость</span><b class='val' id='v1'>${Math.round(SET.vol*100)}%</b><input type='range' id='s1' min='0' max='100' value='${SET.vol*100}' style='--p:${pct(SET.vol*100,100)}'></label></div>
+<div class='grp'><div class='gt'>Фон</div>
+<div class='sg'>${swatches}<button class='sw ${SET.bg==='none'?'on':''}' data-bg='none' style='background:var(--surf2)' aria-label='Без фона'>∅</button><button class='sw ${photo?'on':''}' id='bgp' aria-label='Своё фото' ${photo?`style='background-image:url(${bgUrl})'`:''}>${photo?'':"<svg viewBox='0 0 24 24'><path d='M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z'/></svg>"}</button></div>
+<label class='rg'><span>Размытие</span><b class='val' id='v2'>${SET.blur} px</b><input type='range' id='s2' min='0' max='30' value='${SET.blur}' style='--p:${pct(SET.blur,30)}'></label>
+<label class='rg'><span>Затемнение</span><b class='val' id='v3'>${SET.dim}%</b><input type='range' id='s3' min='0' max='90' value='${SET.dim}' style='--p:${pct(SET.dim,90)}'></label>
+<label class='tgl'><span>Фон по обложке песни<small>Фон меняется вместе с играющей песней</small></span><input type='checkbox' class='switch' id='s4' ${SET.dyn?'checked':''}></label></div>
+<div class='grp'><div class='gt'>Поиск и каталог</div>
+<div class='fld'><span>Ключ Jamendo (client_id)</span><div class='kr'><input type='text' id='s5' value='${esc(SET.jm||'')}' placeholder='вставь ключ сюда' autocomplete='off' autocapitalize='off' spellcheck='false'><a class='pill' id='gkey' href='https://developer.jamendo.com/v3.0' target='_blank' rel='noopener'>Получить ключ ↗</a></div></div>
+<p class='nt'>Бесплатно: зарегистрируйся на сайте Jamendo и создай приложение. Нужный код называется client_id.</p>
+<button class='lk' id='cat'>Каталог дистрибьютора<i>›</i></button></div>
+<p class='nt' style='text-align:center'>На iPhone громкость меняется кнопками телефона</p>`);
   m.oninput=e=>{
-    if(e.target.id==='s5'){SET.jm=e.target.value.trim();saveSet();render();return}
-    const v=+e.target.value;
-    if(e.target.id==='s1'){SET.vol=v/100;$('#vol').value=v}
-    if(e.target.id==='s2')SET.blur=v;
-    if(e.target.id==='s3')SET.dim=v;
-    if(e.target.id==='s4'){SET.dyn=e.target.checked;lastBg=null}
+    const el=e.target;
+    if(el.id==='s5'){SET.jm=el.value.trim();saveSet();render();return}
+    if(el.id==='s6'){SET.th=+el.value;applyTheme(SET.th);saveSet();m.querySelectorAll('.tp .sw').forEach(x=>x.classList.remove('on'));return}
+    const v=+el.value;
+    if(el.id==='s1'){SET.vol=v/100;$('#vol').value=v}
+    if(el.id==='s2')SET.blur=v;
+    if(el.id==='s3')SET.dim=v;
+    if(el.id==='s4'){SET.dyn=el.checked;lastBg=null}
+    if(el.type==='range'){
+      el.style.setProperty('--p',pct(v,+el.max));
+      const lab=$('#v'+el.id.slice(1));if(lab)lab.textContent=el.id==='s2'?v+' px':v+'%';
+    }
     applySet();saveSet();
   };
   m.onclick=e=>{
+    const tb=e.target.closest('[data-th]');
+    if(tb){
+      SET.th=tb.dataset.th===''?null:+tb.dataset.th;applyTheme(SET.th);saveSet();
+      m.querySelectorAll('.tp .sw').forEach(x=>x.classList.toggle('on',x===tb));
+      if(SET.th!==null)$('#s6').value=SET.th;
+    }
     const b=e.target.closest('[data-bg]');
-    if(b){SET.bg=b.dataset.bg;applySet();saveSet();settings()}
-    if(e.target.id==='bgp')$('#bgf').click();
-    if(e.target.id==='cat')catalog();
+    if(b){
+      SET.bg=b.dataset.bg;applySet();saveSet();
+      m.querySelectorAll('.sg .sw').forEach(x=>x.classList.toggle('on',x.dataset.bg===SET.bg));
+    }
+    if(e.target.closest('#bgp'))$('#bgf').click();
+    if(e.target.closest('#cat'))catalog();
   };
 }
 
@@ -750,6 +840,67 @@ async function saveRemote(t){
 }
 $('#sb').onclick=()=>doSearch($('#sq').value);
 $('#sq').onkeydown=e=>{if(e.key==='Enter')doSearch(e.target.value)};
+
+/* ---------- раздел «Вся музыка»: все песни с телефона ---------- */
+const fmtDur=ms=>{const t=Math.round((+ms||0)/1000);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
+const inLib=x=>S.tracks.some(t=>t.blob&&t.name===x.name&&t.blob.size===x.size);
+const isNative=()=>{const C=window.Capacitor;return !!(C&&C.isNativePlatform&&C.isNativePlatform()&&C.nativePromise)};
+async function loadAll(){
+  if(!isNative()){S.allErr='web';render();return}
+  S.allBusy=true;S.allErr='';render();
+  try{
+    const r=await window.Capacitor.nativePromise('Music','list',{});
+    S.all=(r&&r.items)||[];S.allLoaded=true;
+  }catch(e){
+    const m=String((e&&e.message)||e).toLowerCase();
+    S.allErr=m.includes('denied')?'denied':'fail';
+  }
+  S.allBusy=false;render();
+}
+function arow(x){
+  const th=S.thumbs[x.id],has=typeof th==='string',done=inLib(x);
+  const g=has?'url('+th+') center/cover no-repeat':grad({name:String(x.name||x.id)});
+  return `<div class="row" data-aid="${x.id}"><div class="cv" style="--g:${g}">${has?'':'♪'}</div><div class="tx"><b>${esc(x.title||x.name||'')}</b><span>${esc(x.artist||'Неизвестный исполнитель')} · ${fmtDur(x.dur)}</span></div><button class="ib ${done?'on':''}" data-a="ad" data-id="${x.id}" aria-label="Добавить в песни">${done?'✓':'＋'}</button></div>`;
+}
+function allHtml(){
+  if(S.allErr==='web')return "<div class='empty'>Этот раздел работает только в приложении на телефоне.</div>";
+  if(S.allBusy)return "<div class='empty'>Ищу музыку на телефоне…</div>";
+  if(S.allErr==='denied')return "<div class='empty'>Нужно разрешение на доступ к музыке.<br>Разреши его в окне запроса или в настройках телефона.<br><br><button class='pill' id='rt'>Попробовать снова</button></div>";
+  if(S.allErr)return "<div class='empty'>Не удалось получить список музыки.<br><br><button class='pill' id='rt'>Попробовать снова</button></div>";
+  const q=($('#aq').value||'').trim().toLowerCase();
+  const arr=S.all.filter(x=>!q||((x.title||'')+' '+(x.artist||'')+' '+(x.name||'')).toLowerCase().includes(q));
+  if(!arr.length)return "<div class='empty'>"+(S.all.length?'Ничего не нашлось.':'Музыки на телефоне не найдено.')+"</div>";
+  return "<p class='nt' style='padding:0 8px'>Найдено песен: "+arr.length+"</p>"+arr.slice(0,S.allLim).map(arow).join('')+(arr.length>S.allLim?"<div class='empty'><button class='pill' id='mo'>Показать ещё</button></div>":'');
+}
+async function addDevice(id){
+  const x=S.all.find(a=>String(a.id)===String(id));if(!x)return;
+  if(inLib(x)){toast('Эта песня уже в библиотеке');return}
+  if(!isNative())return;
+  toast('Добавляю…');
+  try{
+    const r=await window.Capacitor.nativePromise('Music','copy',{id:+x.id});
+    const res=await fetch('/_capacitor_file_'+encodeURI(r.path));
+    const blob=await res.blob();
+    addFiles([new File([blob],x.name||((x.title||'song')+'.mp3'),{type:blob.type||'audio/mpeg'})],true);
+  }catch(e){toast('Не удалось добавить песню')}
+}
+let thObs=null;
+function observeThumbs(){
+  if(!isNative()||!('IntersectionObserver' in window))return;
+  if(thObs)thObs.disconnect();
+  thObs=new IntersectionObserver(es=>es.forEach(en=>{
+    if(!en.isIntersecting)return;
+    const el=en.target;thObs.unobserve(el);
+    const id=el.dataset.aid;if(S.thumbs[id]!==undefined)return;
+    S.thumbs[id]=null;
+    window.Capacitor.nativePromise('Music','thumb',{id:+id}).then(r=>{
+      if(r&&r.data){S.thumbs[id]=r.data;const cv=el.querySelector('.cv');if(cv){cv.style.setProperty('--g','url('+r.data+') center/cover no-repeat');cv.textContent=''}}
+    }).catch(()=>{});
+  }),{root:$('#main'),rootMargin:'250px'});
+  document.querySelectorAll('#list .row[data-aid]').forEach(el=>thObs.observe(el));
+}
+$('#ar').onclick=()=>{S.allErr='';S.allLoaded=false;loadAll()};
+$('#aq').oninput=render;
 
 /* ---------- запуск ---------- */
 (async()=>{

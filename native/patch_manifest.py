@@ -24,4 +24,13 @@ if 'android.intent.action.SEND' not in s:
     assert '</activity>' in s
     s = s.replace('</activity>', filters + '</activity>', 1)
     open(p, 'w', encoding='utf-8').write(s)
+s = open(p, encoding='utf-8').read()
+if 'READ_MEDIA_AUDIO' not in s:
+    perms = '''
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+'''
+    assert '</manifest>' in s
+    s = s.replace('</manifest>', perms + '</manifest>', 1)
+    open(p, 'w', encoding='utf-8').write(s)
 print('manifest patched')
