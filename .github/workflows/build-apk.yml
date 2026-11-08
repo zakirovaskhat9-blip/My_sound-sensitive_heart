@@ -11,7 +11,7 @@ jobs:
       - name: Check project files
         run: |
           missing=0
-          for f in package.json capacitor.config.json www/index.html native/MainActivity.java native/IntakePlugin.java native/patch_manifest.py debug.keystore assets/icon-only.png assets/splash.png; do
+          for f in package.json capacitor.config.json www/index.html native/MainActivity.java native/IntakePlugin.java native/MusicPlugin.java native/patch_manifest.py debug.keystore assets/icon-only.png assets/splash.png; do
             if [ ! -f "$f" ]; then
               echo "::error::НЕТ ФАЙЛА В РЕПОЗИТОРИИ: $f (загрузи его, смотри README.txt)"
               missing=1
@@ -31,7 +31,7 @@ jobs:
         run: npx cap add android
       - name: Add open and share audio support
         run: |
-          cp native/MainActivity.java native/IntakePlugin.java android/app/src/main/java/app/soundheart/player/
+          cp native/*.java android/app/src/main/java/app/soundheart/player/
           python3 native/patch_manifest.py
       - name: Generate app icons
         run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#e10600' --iconBackgroundColorDark '#e10600' --splashBackgroundColor '#e10600' --splashBackgroundColorDark '#e10600'
