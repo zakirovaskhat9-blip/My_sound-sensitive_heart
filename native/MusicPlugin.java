@@ -32,6 +32,21 @@ import java.io.InputStream;
 )
 public class MusicPlugin extends Plugin {
 
+    private static Long idOf(PluginCall call) {
+        Object v = call.getData().opt("id");
+        if (v instanceof Number) {
+            return ((Number) v).longValue();
+        }
+        if (v instanceof String) {
+            try {
+                return Long.parseLong((String) v);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     private String permAlias() {
         return Build.VERSION.SDK_INT >= 33 ? "audio" : "storage";
     }
@@ -97,7 +112,7 @@ public class MusicPlugin extends Plugin {
 
     @PluginMethod
     public void copy(PluginCall call) {
-        Long id = call.getLong("id");
+        Long id = idOf(call);
         if (id == null) {
             call.reject("no id");
             return;
@@ -129,7 +144,7 @@ public class MusicPlugin extends Plugin {
 
     @PluginMethod
     public void thumb(PluginCall call) {
-        Long id = call.getLong("id");
+        Long id = idOf(call);
         JSObject res = new JSObject();
         if (id == null || Build.VERSION.SDK_INT < 29) {
             call.resolve(res);

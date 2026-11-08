@@ -878,11 +878,13 @@ async function addDevice(id){
   if(!isNative())return;
   toast('Добавляю…');
   try{
-    const r=await window.Capacitor.nativePromise('Music','copy',{id:+x.id});
+    const r=await window.Capacitor.nativePromise('Music','copy',{id:Number(x.id)});
     const res=await fetch('/_capacitor_file_'+encodeURI(r.path));
+    if(!res.ok)throw new Error('файл не открылся ('+res.status+')');
     const blob=await res.blob();
-    addFiles([new File([blob],x.name||((x.title||'song')+'.mp3'),{type:blob.type||'audio/mpeg'})],true);
-  }catch(e){toast('Не удалось добавить песню')}
+    if(!blob.size)throw new Error('пустой файл');
+    addFiles([new File([blob],x.name||((x.title||'song')+'.mp3'),{type:'audio/mpeg'})],true);
+  }catch(e){toast('Не удалось добавить песню: '+String((e&&e.message)||e).slice(0,80))}
 }
 let thObs=null;
 function observeThumbs(){
