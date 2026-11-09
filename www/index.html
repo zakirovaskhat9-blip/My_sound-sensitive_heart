@@ -70,7 +70,7 @@ nav button.on{color:var(--ac)}
 .opt.danger{color:var(--ac)}
 .sh .nw{display:flex;gap:8px;margin-top:12px}
 .sh .nw input{flex:1;padding:11px 14px;border-radius:12px;border:1px solid var(--surf2);background:var(--bg);color:var(--tx);font:inherit}
-#bgl{position:fixed;inset:-24px;z-index:0;background:var(--bg) center/cover no-repeat;filter:blur(var(--bl,0px))}
+#bgl{position:fixed;left:-24px;top:-24px;width:calc(var(--sw,100vw) + 48px);height:calc(var(--sh,100vh) + 48px);z-index:0;background:var(--bg) center/cover no-repeat;filter:blur(var(--bl,0px));transform:translateZ(0)}
 #bgd{position:fixed;inset:0;z-index:0;background:var(--bg);pointer-events:none}
 .fp #app{visibility:hidden}
 .sl{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;color:var(--mut)}
@@ -138,12 +138,15 @@ main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
 .hue{-webkit-appearance:none;appearance:none;width:100%;height:14px;border-radius:7px;background:linear-gradient(to right,hsl(0 90% 60%),hsl(60 90% 60%),hsl(120 90% 60%),hsl(180 90% 60%),hsl(240 90% 60%),hsl(300 90% 60%),hsl(360 90% 60%));margin:4px 0 8px;outline:none}
 .hue::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ac);box-shadow:0 1px 6px rgba(0,0,0,.4)}
 .hue::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--ac)}
+.row{content-visibility:auto;contain-intrinsic-size:auto 62px}
 </style>
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#e10600"><link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <div id="bgl"></div><div id="bgd"></div>
 <script>
+window.fixBgSize=function(){var r=document.documentElement.style;r.setProperty('--sw',Math.max(screen.width||0,innerWidth)+'px');r.setProperty('--sh',Math.max(screen.height||0,innerHeight)+'px')};
+window.fixBgSize();addEventListener('resize',window.fixBgSize);addEventListener('orientationchange',function(){setTimeout(window.fixBgSize,250)});
 window.applyTheme=function(h){
   var r=document.documentElement.style,names=['--bg','--surf','--surf2','--tx','--mut','--ac','--acx'];
   if(h==null||h===''){names.forEach(function(n){r.removeProperty(n)});return}
@@ -220,7 +223,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PLAY='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-const S={all:[],allLoaded:false,allBusy:false,allErr:'',allLim:300,thumbs:{},res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
+const S={all:[],allLoaded:false,allBusy:false,allErr:'',allLim:50,allArr:[],allShown:0,thumbs:{},res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
 const au=$('#au');
 let db=null;
 
@@ -480,7 +483,7 @@ function setBar(m,h){const b=$('#plbar');if(b.dataset.m!==m){b.dataset.m=m;b.inn
 const TABS=['lib','all','pl','fav','search'];
 function go(t,dir){
   if(dir===undefined)dir=Math.sign(TABS.indexOf(t)-TABS.indexOf(S.tab));
-  S.tab=t;S.open=null;render();
+  S.tab=t;S.open=null;if(t==='all')S.allLim=50;render();
   const m=$('#main');m.scrollTop=0;
   if(t==='all'&&!S.allLoaded&&!S.allBusy&&!S.allErr)loadAll();
   if(dir)slideAnim(dir);
@@ -845,9 +848,9 @@ $('#sq').onkeydown=e=>{if(e.key==='Enter')doSearch(e.target.value)};
 const fmtDur=ms=>{const t=Math.round((+ms||0)/1000);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
 const inLib=x=>S.tracks.some(t=>t.blob&&t.name===x.name&&t.blob.size===x.size);
 const isNative=()=>{const C=window.Capacitor;return !!(C&&C.isNativePlatform&&C.isNativePlatform()&&C.nativePromise)};
-async function loadAll(){
-  if(!isNative()){S.allErr='web';render();return}
-  S.allBusy=true;S.allErr='';render();
+async function loadAll(quiet){
+  if(!isNative()){S.allErr='web';if(!quiet)render();return}
+  S.allBusy=true;S.allErr='';if(!quiet)render();
   try{
     const r=await window.Capacitor.nativePromise('Music','list',{});
     S.all=(r&&r.items)||[];S.allLoaded=true;
@@ -856,6 +859,13 @@ async function loadAll(){
     S.allErr=m.includes('denied')?'denied':'fail';
   }
   S.allBusy=false;render();
+}
+async function preloadAll(){
+  if(!isNative()||S.allLoaded||S.allBusy)return;
+  try{
+    const p=await window.Capacitor.nativePromise('Music','checkPermissions',{});
+    if(p&&(p.audio==='granted'||p.storage==='granted'))loadAll(true);
+  }catch(e){}
 }
 function arow(x){
   const th=S.thumbs[x.id],has=typeof th==='string',done=inLib(x);
@@ -870,7 +880,8 @@ function allHtml(){
   const q=($('#aq').value||'').trim().toLowerCase();
   const arr=S.all.filter(x=>!q||((x.title||'')+' '+(x.artist||'')+' '+(x.name||'')).toLowerCase().includes(q));
   if(!arr.length)return "<div class='empty'>"+(S.all.length?'Ничего не нашлось.':'Музыки на телефоне не найдено.')+"</div>";
-  return "<p class='nt' style='padding:0 8px'>Найдено песен: "+arr.length+"</p>"+arr.slice(0,S.allLim).map(arow).join('')+(arr.length>S.allLim?"<div class='empty'><button class='pill' id='mo'>Показать ещё</button></div>":'');
+  S.allArr=arr;S.allShown=Math.min(S.allLim,arr.length);
+  return "<p class='nt' style='padding:0 8px'>Найдено песен: "+arr.length+"</p>"+arr.slice(0,S.allShown).map(arow).join('')+(arr.length>S.allShown?"<div class='empty' id='allmore'><span class='nt'>Загружаю ещё…</span></div>":'');
 }
 async function addDevice(id){
   const x=S.all.find(a=>String(a.id)===String(id));if(!x)return;
@@ -887,22 +898,37 @@ async function addDevice(id){
   }catch(e){toast('Не удалось добавить песню: '+String((e&&e.message)||e).slice(0,80))}
 }
 let thObs=null;
-function observeThumbs(){
+function observeThumbs(inc){
   if(!isNative()||!('IntersectionObserver' in window))return;
-  if(thObs)thObs.disconnect();
-  thObs=new IntersectionObserver(es=>es.forEach(en=>{
-    if(!en.isIntersecting)return;
-    const el=en.target;thObs.unobserve(el);
-    const id=el.dataset.aid;if(S.thumbs[id]!==undefined)return;
-    S.thumbs[id]=null;
-    window.Capacitor.nativePromise('Music','thumb',{id:+id}).then(r=>{
-      if(r&&r.data){S.thumbs[id]=r.data;const cv=el.querySelector('.cv');if(cv){cv.style.setProperty('--g','url('+r.data+') center/cover no-repeat');cv.textContent=''}}
-    }).catch(()=>{});
-  }),{root:$('#main'),rootMargin:'250px'});
-  document.querySelectorAll('#list .row[data-aid]').forEach(el=>thObs.observe(el));
+  if(!inc||!thObs){
+    if(thObs)thObs.disconnect();
+    thObs=new IntersectionObserver(es=>es.forEach(en=>{
+      if(!en.isIntersecting)return;
+      const el=en.target;thObs.unobserve(el);
+      const id=el.dataset.aid;if(S.thumbs[id]!==undefined)return;
+      S.thumbs[id]=null;
+      window.Capacitor.nativePromise('Music','thumb',{id:Number(id)}).then(r=>{
+        if(r&&r.data){S.thumbs[id]=r.data;const cv=el.querySelector('.cv');if(cv){cv.style.setProperty('--g','url('+r.data+') center/cover no-repeat');cv.textContent=''}}
+      }).catch(()=>{});
+    }),{root:$('#main'),rootMargin:'250px'});
+  }
+  document.querySelectorAll('#list .row[data-aid]:not([data-ob])').forEach(el=>{el.dataset.ob='1';thObs.observe(el)});
 }
 $('#ar').onclick=()=>{S.allErr='';S.allLoaded=false;loadAll()};
-$('#aq').oninput=render;
+$('#aq').oninput=()=>{S.allLim=50;render()};
+function moreAll(){
+  const ph=$('#allmore');if(!ph||S.allShown>=S.allArr.length)return;
+  const next=S.allArr.slice(S.allShown,S.allShown+50);
+  S.allShown+=next.length;S.allLim=S.allShown;
+  ph.insertAdjacentHTML('beforebegin',next.map(arow).join(''));
+  if(S.allShown>=S.allArr.length)ph.remove();
+  observeThumbs(true);
+}
+$('#main').addEventListener('scroll',()=>{
+  if(S.tab!=='all'||S.allShown>=S.allArr.length)return;
+  const m=$('#main');
+  if(m.scrollHeight-m.scrollTop-m.clientHeight<700)moreAll();
+},{passive:true});
 
 /* ---------- запуск ---------- */
 (async()=>{
@@ -913,6 +939,7 @@ $('#aq').oninput=render;
   S.tracks.filter(t=>!t.remote&&t.cc!==2&&t.blob).forEach(coverFor);
   render();ui();
   if(window.onNativeIntake)window.onNativeIntake();
+  preloadAll();
 })();
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
