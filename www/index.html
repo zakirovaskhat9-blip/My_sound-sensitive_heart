@@ -55,7 +55,11 @@ nav button.on{color:var(--ac)}
 @media (prefers-reduced-motion:reduce){.disc{animation:none}}
 .meta{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
 .meta .tx b{font-size:20px}
-#seek{width:100%;accent-color:var(--ac);margin:8px 0 0}
+#seek{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:4px;background:linear-gradient(to right,var(--ac) var(--p,0%),var(--surf2) var(--p,0%));outline:none;margin:14px 0 6px;touch-action:pan-x}
+#seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ac);border:3px solid var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.4)}
+#seek::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--ac);border:3px solid var(--bg)}
+.skr{display:flex;justify-content:center;gap:28px}
+.sk{width:auto;padding:0 14px;font-size:15px;font-weight:700;color:var(--tx)}
 .times{display:flex;justify-content:space-between;color:var(--mut);font-size:12px}
 .ctl{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
 .ctl .pp{width:64px;height:64px}
@@ -139,6 +143,11 @@ main{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
 .hue::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ac);box-shadow:0 1px 6px rgba(0,0,0,.4)}
 .hue::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--ac)}
 .row{content-visibility:auto;contain-intrinsic-size:auto 62px}
+.srv{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--surf2)}
+.srv .tx{flex:1;min-width:0}
+.fld select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--surf2);background:var(--surf);color:var(--tx);font:inherit}
+#mtrack{position:absolute;left:0;right:0;bottom:0;height:20px;cursor:pointer;z-index:2;touch-action:none}
+#mbar{height:4px;z-index:1}
 </style>
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#e10600"><link rel="apple-touch-icon" href="icon-192.png">
 </head>
@@ -186,7 +195,7 @@ window.applyTheme=function(h){
     <div class="tx" id="mtx"><b id="mt"></b><span id="ma"></span></div>
     <button class="pp" id="mpp" aria-label="Играть или пауза"></button>
     <button class="ib" id="mnx" aria-label="Следующий">⏭</button>
-    <div id="mbar"></div>
+    <div id="mbar"></div><div id="mtrack" aria-label="Перемотка"></div>
   </div>
   <nav id="tabs">
     <button data-t="lib" aria-label="Библиотека"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg></button>
@@ -204,6 +213,7 @@ window.applyTheme=function(h){
     <div class="meta"><div class="tx"><b id="ft"></b><span id="fa"></span></div><button class="ib" id="fadd" aria-label="В плейлист">＋</button><button class="ib" id="ffav" aria-label="В избранное">♡</button></div>
     <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Перемотка">
     <div class="times"><span id="tc">0:00</span><span id="td">0:00</span></div>
+    <div class="skr"><button class="ib sk" id="bk10" aria-label="Назад на 10 секунд">⟲ 10</button><button class="ib sk" id="fw10" aria-label="Вперёд на 10 секунд">10 ⟳</button></div>
     <div class="ctl">
       <button class="ib" id="bsh" aria-label="Перемешать">⇄</button>
       <button class="ib" id="bpv" aria-label="Предыдущий">⏮</button>
@@ -223,7 +233,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PLAY='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-const S={all:[],allLoaded:false,allBusy:false,allErr:'',allLim:50,allArr:[],allShown:0,thumbs:{},res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
+const S={all:[],allLoaded:false,allBusy:false,allErr:'',sidx:{},allLim:50,allArr:[],allShown:0,thumbs:{},res:[],rmap:{},rq:'',rnote:'',rbusy:false,tracks:[],pls:[],tab:'lib',open:null,queue:[],qi:-1,cur:null,sh:false,rp:0,view:[],drag:false};
 const au=$('#au');
 let db=null;
 
@@ -316,7 +326,7 @@ function render(){
     html=allHtml();
   }else if(t==='search'){
     ids=S.res.slice();
-    if(!jmKey())html="<div class='empty'>Для поиска нужен бесплатный ключ Jamendo.<br>Открой настройки ⚙ и вставь его.<br><br><button class='pill' id='gk'>Открыть настройки</button><br><br><a class='pill' href='https://developer.jamendo.com/v3.0' target='_blank' rel='noopener' style='display:inline-block;text-decoration:none'>Получить ключ ↗</a></div>";
+    if(!srvs().length)html="<div class='empty'>Для поиска добавь свой сервер: домашний или любой другой.<br>Открой настройки ⚙ → «Серверы для поиска».<br><br><button class='pill' id='gk'>Открыть настройки</button></div>";
     else if(S.rbusy)html="<div class='empty'>Ищу…</div>";
     else if(!S.rq)html="<div class='empty'>Введи название песни, исполнителя или жанр.</div>";
     else if(!ids.length)html="<div class='empty'>"+esc(S.rnote||'Ничего не нашлось.')+"</div>";
@@ -411,11 +421,21 @@ au.onplay=au.onpause=()=>ui();
 au.ontimeupdate=()=>{
   const d=au.duration||0;
   $('#mbar').style.width=d?(au.currentTime/d*100)+'%':'0';
-  if(!S.drag)$('#seek').value=d?au.currentTime/d*1000:0;
+  if(!S.drag){$('#seek').value=d?au.currentTime/d*1000:0;$('#seek').style.setProperty('--p',(d?au.currentTime/d*100:0)+'%')}
+  const now=Date.now();
+  if(now-(au._ps||0)>1000&&isFinite(d)&&d>0&&'mediaSession' in navigator&&navigator.mediaSession.setPositionState){au._ps=now;try{navigator.mediaSession.setPositionState({duration:d,playbackRate:1,position:Math.min(au.currentTime,d)})}catch(e){}}
   $('#tc').textContent=fmt(au.currentTime);
 };
 au.onloadedmetadata=()=>{$('#td').textContent=fmt(au.duration)};
-$('#seek').oninput=e=>{S.drag=true;if(au.duration)au.currentTime=e.target.value/1000*au.duration};
+$('#seek').oninput=e=>{S.drag=true;e.target.style.setProperty('--p',(e.target.value/10)+'%');if(au.duration)au.currentTime=e.target.value/1000*au.duration;$('#tc').textContent=fmt(au.currentTime)};
+const jump=d=>{const t=au.currentTime+d,m=isFinite(au.duration)?au.duration:1e9;au.currentTime=Math.max(0,Math.min(m,t))};
+$('#bk10').onclick=()=>jump(-10);$('#fw10').onclick=()=>jump(10);
+(()=>{
+  const t=$('#mtrack'),f=e=>{const r=t.getBoundingClientRect();if(au.duration&&r.width)au.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*au.duration};
+  t.addEventListener('pointerdown',e=>{try{t.setPointerCapture(e.pointerId)}catch(x){}t._d=true;f(e)});
+  t.addEventListener('pointermove',e=>{if(t._d)f(e)});
+  t.addEventListener('pointerup',()=>{t._d=false});t.addEventListener('pointercancel',()=>{t._d=false});
+})();
 $('#seek').onchange=()=>S.drag=false;
 $('#mpp').onclick=$('#fpp').onclick=toggle;
 $('#mnx').onclick=$('#bnx').onclick=()=>step(1);
@@ -448,13 +468,12 @@ function ui(){
 function mediaSession(t){
   if(!('mediaSession' in navigator))return;
   try{navigator.mediaSession.metadata=new MediaMetadata({title:t.title,artist:t.artist||''})}catch(e){}
-  [['play',()=>au.play()],['pause',()=>au.pause()],['previoustrack',prev],['nexttrack',()=>step(1)]].forEach(([a,f])=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}});
+  [['play',()=>au.play()],['pause',()=>au.pause()],['previoustrack',prev],['nexttrack',()=>step(1)],['seekbackward',()=>jump(-10)],['seekforward',()=>jump(10)],['seekto',d=>{if(d&&d.seekTime!=null)au.currentTime=d.seekTime}]].forEach(([a,f])=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}});
 }
 
 /* ---------- настройки и фон ---------- */
 const G=['linear-gradient(160deg,#ff7aa2,#6a4cff)','linear-gradient(160deg,#0f2027,#2c5364)','linear-gradient(160deg,#f9d976,#f39f86)','linear-gradient(160deg,#1a1626,#4b2e83)'];
-const JM_DEFAULT='';
-const SET={th:null,jm:'',vol:1,blur:6,dim:45,bg:'none',feed:'',dyn:false};
+const SET={th:null,srv:[],vol:1,blur:6,dim:45,bg:'none',feed:'',dyn:false};
 let lastBg=null;
 try{Object.assign(SET,JSON.parse(localStorage.getItem('echo.set')||'{}'))}catch(e){}
 let bgUrl=null;try{bgUrl=localStorage.getItem('echo.bgimg')}catch(e){}
@@ -580,6 +599,7 @@ function settings(){
   const pct=(v,max)=>(v/max*100)+'%';
   const swatches=G.map((g,i)=>`<button class='sw ${SET.bg==='g'+i?'on':''}' data-bg='g${i}' style='background:${g}' aria-label='Фон ${i+1}'></button>`).join('');
   const photo=SET.bg==='img'&&bgUrl;
+  const svHtml=srvs().map(v=>`<div class='srv'><div class='tx'><b>${esc(v.name)}</b><span>${esc(SRVT[v.type]||v.type)} · ${esc(v.url)}</span></div><button class='ib' data-del='${esc(v.id)}' aria-label='Удалить сервер'>✕</button></div>`).join('');
   const m=sheet(`<h2>Настройки</h2>
 <div class='grp'><div class='gt'>Цвет темы</div>
 <div class='sg tp'><button class='sw ${SET.th==null?'on':''}' data-th='' style='background:linear-gradient(135deg,#ff7aa2,#6a4cff)' aria-label='Исходная тема'></button>${[350,25,140,200,270].map(h=>`<button class='sw ${SET.th===h?'on':''}' data-th='${h}' style='background:hsl(${h} 90% 62%)' aria-label='Цвет темы ${h}'></button>`).join('')}</div>
@@ -592,14 +612,13 @@ function settings(){
 <label class='rg'><span>Размытие</span><b class='val' id='v2'>${SET.blur} px</b><input type='range' id='s2' min='0' max='30' value='${SET.blur}' style='--p:${pct(SET.blur,30)}'></label>
 <label class='rg'><span>Затемнение</span><b class='val' id='v3'>${SET.dim}%</b><input type='range' id='s3' min='0' max='90' value='${SET.dim}' style='--p:${pct(SET.dim,90)}'></label>
 <label class='tgl'><span>Фон по обложке песни<small>Фон меняется вместе с играющей песней</small></span><input type='checkbox' class='switch' id='s4' ${SET.dyn?'checked':''}></label></div>
-<div class='grp'><div class='gt'>Поиск и каталог</div>
-<div class='fld'><span>Ключ Jamendo (client_id)</span><div class='kr'><input type='text' id='s5' value='${esc(SET.jm||'')}' placeholder='вставь ключ сюда' autocomplete='off' autocapitalize='off' spellcheck='false'><a class='pill' id='gkey' href='https://developer.jamendo.com/v3.0' target='_blank' rel='noopener'>Получить ключ ↗</a></div></div>
-<p class='nt'>Бесплатно: зарегистрируйся на сайте Jamendo и создай приложение. Нужный код называется client_id.</p>
+<div class='grp'><div class='gt'>Серверы для поиска</div>
+${svHtml||"<p class='nt'>Пока нет серверов. Добавь домашний сервер или любой другой.</p>"}
+<button class='lk' id='addsrv'>Добавить сервер<i>＋</i></button>
 <button class='lk' id='cat'>Каталог дистрибьютора<i>›</i></button></div>
 <p class='nt' style='text-align:center'>На iPhone громкость меняется кнопками телефона</p>`);
   m.oninput=e=>{
     const el=e.target;
-    if(el.id==='s5'){SET.jm=el.value.trim();saveSet();render();return}
     if(el.id==='s6'){SET.th=+el.value;applyTheme(SET.th);saveSet();m.querySelectorAll('.tp .sw').forEach(x=>x.classList.remove('on'));return}
     const v=+el.value;
     if(el.id==='s1'){SET.vol=v/100;$('#vol').value=v}
@@ -613,6 +632,9 @@ function settings(){
     applySet();saveSet();
   };
   m.onclick=e=>{
+    if(e.target.closest('#addsrv')){addServer();return}
+    const dv=e.target.closest('[data-del]');
+    if(dv){SET.srv=srvs().filter(v=>v.id!==dv.dataset.del);saveSet();settings();render();return}
     const tb=e.target.closest('[data-th]');
     if(tb){
       SET.th=tb.dataset.th===''?null:+tb.dataset.th;applyTheme(SET.th);saveSet();
@@ -768,24 +790,102 @@ $('#cvf').onchange=e=>{
   dbPut(t);render();ui();if(SET.dyn)applySet();toast('Обложка установлена');
 };
 
-/* ---------- поиск: каталог Jamendo (музыка под лицензиями Creative Commons) ---------- */
-const jmKey=()=>String(SET.jm||JM_DEFAULT||'').trim();
-const bad=u=>[...u].some(c=>' ()\'"<>'.includes(c));
-const goodUrl=u=>typeof u==='string'&&isUrl(u)&&!bad(u);
-const licName=u=>{const m=String(u||'').split('/licenses/')[1];return m?'CC '+m.split('/')[0].toUpperCase():'CC'};
-async function jm(path,p){
-  const u=new URL('https://api.jamendo.com/v3.0/'+path+'/');
-  const q=Object.assign({client_id:jmKey(),format:'json',limit:30,include:'musicinfo',imagesize:200,audioformat:'mp32'},p);
-  Object.keys(q).forEach(k=>u.searchParams.set(k,q[k]));
-  const r=await fetch(u.toString());const j=await r.json();
-  if(j.headers&&j.headers.status&&j.headers.status!=='success')throw new Error(j.headers.error_message||'api');
-  return j.results||[];
+/* ---------- серверы: домашний сервер или любой другой ---------- */
+const SRVT={sub:'Navidrome / Subsonic',json:'JSON-каталог',dir:'Папка по HTTP'};
+const srvs=()=>SET.srv||[];
+const safeUrl=u=>[...String(u)].map(c=>({' ':'%20','(':'%28',')':'%29',"'":'%27','"':'%22','<':'%3C','>':'%3E'}[c]||c)).join('');
+const noSlash=u=>{u=String(u).trim();while(u.endsWith('/'))u=u.slice(0,-1);return u};
+function md5(str){
+  const b=new TextEncoder().encode(str),n=b.length,w=[];
+  for(let i=0;i<n;i++)w[i>>2]|=b[i]<<((i%4)*8);
+  w[n>>2]|=0x80<<((n%4)*8);
+  const len=(((n+8)>>6)+1)*16;
+  for(let i=0;i<len;i++)w[i]=w[i]||0;
+  w[len-2]=n*8;
+  const K=[],R=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21];
+  for(let i=0;i<64;i++)K[i]=Math.floor(Math.abs(Math.sin(i+1))*4294967296)>>>0;
+  let a0=0x67452301,b0=0xefcdab89|0,c0=0x98badcfe|0,d0=0x10325476;
+  for(let o=0;o<len;o+=16){
+    let A=a0,B=b0,C=c0,D=d0;
+    for(let i=0;i<64;i++){
+      let F,g;
+      if(i<16){F=(B&C)|(~B&D);g=i}
+      else if(i<32){F=(D&B)|(~D&C);g=(5*i+1)%16}
+      else if(i<48){F=B^C^D;g=(3*i+5)%16}
+      else{F=C^(B|~D);g=(7*i)%16}
+      F=(F+A+K[i]+(w[o+g]|0))|0;
+      A=D;D=C;C=B;
+      const r=R[(i>>4)*4+(i%4)];
+      B=(B+((F<<r)|(F>>>(32-r))))|0;
+    }
+    a0=(a0+A)|0;b0=(b0+B)|0;c0=(c0+C)|0;d0=(d0+D)|0;
+  }
+  const hx=x=>{let r='';for(let i=0;i<4;i++)r+=((x>>>(i*8))&255).toString(16).padStart(2,'0');return r};
+  return hx(a0)+hx(b0)+hx(c0)+hx(d0);
 }
-function addRes(list){
-  S.res=list.filter(r=>goodUrl(r.audio)).map(r=>{
-    const id='j'+r.id,tg=(r.musicinfo&&r.musicinfo.tags)||{};
-    const img=r.album_image||r.image||'';
-    S.rmap[id]={id,tmp:true,remote:true,url:r.audio,dl:goodUrl(r.audiodownload)?r.audiodownload:'',dlok:r.audiodownload_allowed!==false,name:String(r.name),title:String(r.name),artist:String(r.artist_name||''),curl:goodUrl(img)?img:'',lic:licName(r.license_ccurl),share:goodUrl(r.shareurl)?r.shareurl:'',tags:[].concat(tg.genres||[],tg.vartags||[]).slice(0,4),fav:false,added:Date.now()};
+function subUrl(sv,ep,p){
+  const u=new URL(noSlash(sv.url)+'/rest/'+ep+'.view');
+  const q=Object.assign({u:sv.user||'',t:sv.token||'',s:sv.salt||'',v:'1.16.1',c:'heart',f:'json'},p||{});
+  Object.keys(q).forEach(k=>u.searchParams.set(k,q[k]));
+  return u.toString();
+}
+async function subCall(sv,ep,p){
+  const r=await fetch(subUrl(sv,ep,p));const j=await r.json();
+  const x=j['subsonic-response'];
+  if(!x||x.status!=='ok')throw new Error((x&&x.error&&x.error.message)||'сервер ответил с ошибкой');
+  return x;
+}
+const mapSub=(sv,x)=>({raw:String(x.id),title:String(x.title||''),artist:String(x.artist||''),genre:String(x.genre||''),url:subUrl(sv,'stream',{id:x.id}),dl:subUrl(sv,'download',{id:x.id}),cover:x.coverArt?subUrl(sv,'getCoverArt',{id:x.coverArt,size:200}):'',path:''});
+const AUD=['mp3','flac','m4a','ogg','opus','wav','aac'];
+async function crawlDir(base){
+  const out=[],seen=new Set();
+  async function walk(dir,depth){
+    if(seen.has(dir)||depth<0||out.length>=3000)return;
+    seen.add(dir);
+    const html=await (await fetch(dir)).text();
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    const dirs=[];
+    doc.querySelectorAll('a[href]').forEach(a=>{
+      const h=a.getAttribute('href');if(!h||h[0]==='?'||h[0]==='#')return;
+      let u;try{u=new URL(h,dir)}catch(e){return}
+      const href=u.href;if(!href.startsWith(base))return;
+      if(href.endsWith('/')){if(href.length>dir.length&&href.startsWith(dir))dirs.push(href);return}
+      let name=href.slice(href.lastIndexOf('/')+1);try{name=decodeURIComponent(name)}catch(e){}
+      if(AUD.includes(name.split('.').pop().toLowerCase())){
+        const m=parse({name});let path=href.slice(base.length);try{path=decodeURIComponent(path)}catch(e){}
+        out.push({raw:href,title:m.title,artist:m.artist,genre:'',url:href,dl:href,cover:'',path});
+      }
+    });
+    await Promise.all(dirs.map(d=>walk(d,depth-1)));
+  }
+  await walk(base,3);
+  return out;
+}
+async function srvIndex(sv,force){
+  const c=S.sidx[sv.id];
+  if(c&&!force&&Date.now()-c.t<600000)return c.list;
+  let list;
+  if(sv.type==='json'){
+    const r=await fetch(sv.url);const j=await r.json();
+    const arr=Array.isArray(j)?j:j&&j.tracks;
+    if(!Array.isArray(arr))throw new Error('в ответе нет списка треков');
+    list=arr.map(x=>({raw:String(x.id||x.url||x.audio||x.file||''),title:String(x.title||x.name||'Без названия'),artist:String(x.artist||''),genre:'',url:String(x.url||x.audio||x.file||''),dl:String(x.url||x.audio||x.file||''),cover:String(x.cover||x.image||''),path:''})).filter(t=>isUrl(t.url));
+  }else list=await crawlDir(noSlash(sv.url)+'/');
+  S.sidx[sv.id]={t:Date.now(),list};
+  return list;
+}
+async function srvSearch(sv,q){
+  if(sv.type==='sub'){
+    const r=await subCall(sv,'search3',{query:q,songCount:30,artistCount:0,albumCount:0});
+    return ((r.searchResult3&&r.searchResult3.song)||[]).map(x=>mapSub(sv,x));
+  }
+  const w=q.toLowerCase().split(' ').filter(Boolean);
+  return (await srvIndex(sv)).filter(t=>w.every(k=>(t.title+' '+t.artist+' '+t.path).toLowerCase().includes(k))).slice(0,60);
+}
+function setRes(sv,list){
+  return list.filter(x=>isUrl(String(x.url))).map(x=>{
+    const id='r'+cid(sv.id)+'-'+cid(x.raw||x.url);
+    S.rmap[id]={id,tmp:true,remote:true,url:safeUrl(x.url),dl:safeUrl(x.dl||x.url),dlok:true,name:x.title,title:x.title,artist:x.artist,curl:x.cover?safeUrl(x.cover):'',lic:sv.name,share:'',tags:x.genre?[x.genre]:[],src:sv.id,raw:x.raw,genre:x.genre||'',path:x.path||'',fav:false,added:Date.now()};
     return id;
   });
 }
@@ -793,29 +893,44 @@ function rrow(t,i){
   return `<div class="row ${S.cur===t.id?'cur':''}" data-i="${i}"><div class="cv" style="--g:${grad(t)}">${t.curl?'':'♪'}</div><div class="tx"><b>${esc(t.title)}</b><span>${esc(t.artist)}${t.lic?' · '+esc(t.lic):''}</span></div><button class="ib" data-a="sim" data-id="${t.id}" aria-label="Похожие">≈</button><button class="ib" data-a="sv" data-id="${t.id}" aria-label="Сохранить в библиотеку">⤓</button></div>`;
 }
 async function doSearch(q){
-  q=String(q||'').trim();if(!q||!jmKey())return;
+  q=String(q||'').trim();if(!q||!srvs().length)return;
   S.rq=q;S.rbusy=true;S.rnote='';S.res=[];render();
-  try{
-    let list=await jm('tracks',{search:q}),note='';
-    const w=q.split(' ').filter(Boolean);
-    if(!list.length&&w.length>1)list=await jm('tracks',{search:w[0]});
-    if(!list.length){list=await jm('tracks',{fuzzytags:w.join(' '),order:'popularity_total'})}
-    if(!list.length)S.rnote='Ничего не нашлось. Попробуй другое название или жанр.';
-    else if(!(list[0].name||'').toLowerCase().includes(q.toLowerCase()))note='Точной песни нет, вот похожие';
-    S.rnote=S.rnote||note;
-    addRes(list);
-  }catch(e){S.rnote='Не удалось выполнить поиск. Проверь интернет и ключ Jamendo в настройках.';S.res=[]}
+  const run=async qq=>{
+    const rs=await Promise.allSettled(srvs().map(async sv=>({sv,list:await srvSearch(sv,qq)})));
+    const out=[];let fail=0;
+    rs.forEach(r=>{if(r.status==='fulfilled')out.push(r.value);else fail++});
+    return {out,fail};
+  };
+  const count=o=>o.out.reduce((a,x)=>a+x.list.length,0);
+  let o=await run(q),note='';
+  if(!count(o)){
+    const w=q.split(' ').filter(x=>x.length>2).sort((a,b)=>b.length-a.length);
+    if(w.length){const o2=await run(w[0]);if(count(o2)){o=o2;note='Точной песни нет, вот похожие'}}
+  }
+  const ids=[];o.out.forEach(x=>ids.push(...setRes(x.sv,x.list)));
+  S.res=ids;
+  if(!ids.length)S.rnote=o.fail&&o.fail===srvs().length?'Не удалось связаться с серверами. Проверь адрес и сеть.':'Ничего не нашлось. Попробуй другое название.';
+  else S.rnote=note||(o.fail?'Часть серверов не ответила.':'');
   S.rbusy=false;render();
 }
 async function similar(t){
   if(!t)return;
+  const sv=srvs().find(x=>x.id===t.src);if(!sv)return;
   S.rq='sim';S.rbusy=true;S.rnote='';render();
   try{
-    const list=await jm('tracks',t.tags&&t.tags.length?{fuzzytags:t.tags.join(' '),order:'popularity_total'}:{search:t.artist||t.title});
-    addRes(list.filter(x=>'j'+x.id!==t.id));
-    S.rnote='Похожие на «'+t.title+'»';
-    if(!S.res.length)S.rnote='Похожих песен не нашлось.';
-  }catch(e){S.rnote='Не удалось найти похожие. Проверь интернет и ключ Jamendo.';S.res=[]}
+    let list=[];
+    if(sv.type==='sub'){
+      if(t.genre){const r=await subCall(sv,'getRandomSongs',{size:30,genre:t.genre});list=(r.randomSongs&&r.randomSongs.song)||[]}
+      if(!list.length&&t.artist){const r=await subCall(sv,'search3',{query:t.artist,songCount:30,artistCount:0,albumCount:0});list=(r.searchResult3&&r.searchResult3.song)||[]}
+      list=list.map(x=>mapSub(sv,x));
+    }else{
+      const dirOf=p=>p.slice(0,p.lastIndexOf('/')+1);
+      list=(await srvIndex(sv)).filter(x=>(t.artist&&x.artist===t.artist)||(dirOf(t.path||'')&&dirOf(x.path||'')===dirOf(t.path||''))).slice(0,40);
+    }
+    list=list.filter(x=>String(x.raw)!==String(t.raw));
+    S.res=setRes(sv,list);
+    S.rnote=S.res.length?'Похожие на «'+t.title+'»':'Похожих песен не нашлось.';
+  }catch(e){S.rnote='Не удалось найти похожие. Проверь сервер.';S.res=[]}
   S.rbusy=false;render();
 }
 async function getBlob(url){
@@ -840,6 +955,38 @@ async function saveRemote(t){
     toast('Не удалось скачать. Открываю страницу песни');
     if(t.share)window.open(t.share,'_blank');
   }
+}
+function addServer(){
+  const HINT={sub:'Адрес вида http://192.168.1.10:4533. Подойдёт Navidrome, Subsonic, Airsonic, Gonic.',json:'Ссылка на JSON со списком треков: {"tracks":[{"title":"…","artist":"…","url":"…"}]}.',dir:'Адрес папки с музыкой, которую отдаёт сервер (nginx, Apache, python -m http.server).'};
+  const m=sheet(`<h2>Новый сервер</h2><div class='grp'>
+<label class='fld'><span>Название</span><input id='f_n' placeholder='Домашний сервер' autocomplete='off'></label>
+<label class='fld'><span>Тип</span><select id='f_t'><option value='sub'>Navidrome / Subsonic</option><option value='json'>JSON-каталог (список треков)</option><option value='dir'>Папка по HTTP (nginx, Apache…)</option></select></label>
+<label class='fld'><span>Адрес</span><input id='f_u' placeholder='http://192.168.1.10:4533' autocomplete='off' autocapitalize='off' spellcheck='false'></label>
+<div id='f_auth'><label class='fld'><span>Логин</span><input id='f_l' autocomplete='off' autocapitalize='off'></label><label class='fld'><span>Пароль</span><input id='f_p' type='password' autocomplete='off'></label></div>
+<p class='nt' id='f_h'>${HINT.sub}</p><p class='nt' id='f_m'></p></div>
+<button class='pill' id='f_ok' style='width:100%'>Проверить и сохранить</button>`);
+  let force=false;
+  const type=()=>$('#f_t').value;
+  m.onchange=e=>{if(e.target.id==='f_t'){$('#f_h').textContent=HINT[type()];$('#f_auth').hidden=type()!=='sub';force=false;$('#f_ok').textContent='Проверить и сохранить'}};
+  m.onclick=async e=>{
+    if(!e.target.closest('#f_ok'))return;
+    const msg=t=>{$('#f_m').textContent=t};
+    const url=noSlash($('#f_u').value);
+    if(!isUrl(url)){msg('Адрес должен начинаться с http:// или https://');return}
+    const sv={id:'s'+Date.now(),name:($('#f_n').value.trim()||'Сервер'),type:type(),url};
+    if(sv.type==='sub'){
+      sv.user=$('#f_l').value.trim();sv.salt=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+      sv.token=md5($('#f_p').value+sv.salt);
+    }
+    if(!force){
+      msg('Проверяю…');
+      try{
+        if(sv.type==='sub'){await subCall(sv,'ping')}
+        else{const n=(await srvIndex(sv,true)).length;if(!n)throw new Error('песен не найдено')}
+      }catch(err){msg('Не получилось: '+String((err&&err.message)||err).slice(0,90)+'. Нажми ещё раз, чтобы сохранить всё равно.');force=true;$('#f_ok').textContent='Сохранить всё равно';return}
+    }
+    SET.srv=srvs().concat([sv]);saveSet();S.sidx={};settings();render();toast('Сервер добавлен');
+  };
 }
 $('#sb').onclick=()=>doSearch($('#sq').value);
 $('#sq').onkeydown=e=>{if(e.key==='Enter')doSearch(e.target.value)};

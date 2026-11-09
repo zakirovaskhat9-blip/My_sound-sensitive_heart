@@ -33,4 +33,9 @@ if 'READ_MEDIA_AUDIO' not in s:
     assert '</manifest>' in s
     s = s.replace('</manifest>', perms + '</manifest>', 1)
     open(p, 'w', encoding='utf-8').write(s)
+s = open(p, encoding='utf-8').read()
+if 'usesCleartextTraffic' not in s:
+    assert '<application' in s
+    s = s.replace('<application', '<application android:usesCleartextTraffic="true"', 1)
+    open(p, 'w', encoding='utf-8').write(s)
 print('manifest patched')
