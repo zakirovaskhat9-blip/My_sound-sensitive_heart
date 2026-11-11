@@ -1,4 +1,7 @@
 name: Build APK
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
 on:
   push:
     branches: [main, master]
@@ -6,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Check project files
@@ -25,8 +29,15 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: gradle-${{ runner.os }}-
       - name: Install
-        run: npm install
+        run: npm install --no-audit --no-fund --prefer-offline
       - name: Add Android project
         run: npx cap add android
       - name: Add open and share audio support
@@ -44,7 +55,7 @@ jobs:
           cp debug.keystore ~/.android/debug.keystore
           chmod +x android/gradlew
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon --build-cache -Dorg.gradle.jvmargs=-Xmx2g
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
